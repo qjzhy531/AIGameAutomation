@@ -43,62 +43,39 @@ object AIEngine {
     }
     
     private suspend fun detectImageLabels(bitmap: Bitmap): List<ImageLabel> {
-        return withContext(Dispatchers.IO) {
+        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
             val image = InputImage.fromBitmap(bitmap, 0)
-            val labels = mutableListOf<ImageLabel>()
-            
             imageLabeler.process(image)
                 .addOnSuccessListener { result ->
-                    labels.addAll(result)
+                    continuation.resume(result)
                 }
-                .await()
-            
-            labels
+                .addOnFailureListener { e ->
+                    continuation.resumeWithException(e)
+                }
         }
     }
     
     private suspend fun detectText(bitmap: Bitmap): String {
-        return withContext(Dispatchers.IO) {
+        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
             val image = InputImage.fromBitmap(bitmap, 0)
-            val textResult = StringBuilder()
-            
             textRecognizer.process(image)
                 .addOnSuccessListener { result ->
+                    val textResult = StringBuilder()
                     for (block in result.textBlocks) {
                         textResult.append(block.text).append("\n")
                     }
+                    continuation.resume(textResult.toString())
                 }
-                .await()
-            
-            textResult.toString()
+                .addOnFailureListener { e ->
+                    continuation.resumeWithException(e)
+                }
         }
     }
     
     fun findElementPosition(screenshot: Bitmap, targetLabel: String): Rect? {
-        // 简化实现：查找目标元素的位置
+        // 简化实现：返回一个示例位置
         // 实际应该使用更精确的目标检测算法
-        val labels = detectImageLabelsSync(screenshot)
-        
-        for (label in labels) {
-            if (label.text.contains(targetLabel, ignoreCase = true)) {
-                // 返回一个示例位置
-                return Rect(100, 100, 200, 200)
-            }
-        }
-        
-        return null
-    }
-    
-    private fun detectImageLabelsSync(bitmap: Bitmap): List<ImageLabel> {
-        val image = InputImage.fromBitmap(bitmap, 0)
-        val labels = mutableListOf<ImageLabel>()
-        
-        imageLabeler.process(image)
-            .addOnSuccessListener { result ->
-                labels.addAll(result)
-            }
-        
-        return labels
+        return Rect(100, 100, 200, 200)
     }
 }
 
