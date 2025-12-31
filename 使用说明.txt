@@ -1,0 +1,77 @@
+AI游戏自动化工具 - 使用说明
+=====================================
+
+项目位置：C:\Users\Administrator\Desktop\AIGameAutomation
+
+一、编译项目
+----------
+1. 安装 Android Studio
+   - 下载地址：https://developer.android.com/studio
+   - 安装时选择 "Android SDK"
+
+2. 打开项目
+   - 启动 Android Studio
+   - 选择 "Open an Existing Project"
+   - 浏览到：C:\Users\Administrator\Desktop\AIGameAutomation
+   - 点击 "OK"
+
+3. 等待 Gradle 同步
+   - 首次打开会自动下载依赖
+   - 等待右下角进度条完成
+
+4. 编译项目
+   - 菜单：Build -> Build Bundle(s) / APK(s) -> Build APK(s)
+   - 或快捷键：Ctrl + F9
+
+5. 安装到设备
+   - APK位置：app\build\outputs\apk\debug\app-debug.apk
+   - 使用 adb install app-debug.apk
+
+二、使用方法
+----------
+1. 启动应用
+2. 授予悬浮窗权限
+3. 开启无障碍服务
+4. 点击"开始游戏自动化"
+
+三、自定义策略
+----------
+在 AIEngine.kt 中可以自定义游戏策略：
+
+示例：
+class MyGameStrategy : GameStrategy {
+    override fun makeDecision(context: GameContext): Decision {
+        return Decision(
+            action = "click",
+            x = 100,
+            y = 200,
+            confidence = 0.9f
+        )
+    }
+}
+
+设置策略：
+AIEngine.setStrategy(MyGameStrategy())
+
+四、注意事项
+----------
+1. 需要Android 7.0 (API 24) 或更高版本
+2. 必须授予悬浮窗和无障碍服务权限
+3. 部分游戏可能检测自动化行为
+4. 屏幕捕获和AI分析会消耗较多资源
+
+五、项目结构
+----------
+- MainActivity.kt - 主界面
+- AutomationService.kt - 自动化服务
+- GameAccessibilityService.kt - 无障碍服务
+- AIEngine.kt - AI引擎
+
+六、技术支持
+----------
+如有问题，请检查：
+1. Android SDK 是否正确安装
+2. Gradle 是否正确配置
+3. 依赖是否正确下载
+
+祝使用愉快！

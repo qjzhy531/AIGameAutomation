@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AI游戏自动化</string>
+    <string name="accessibility_service_id">com.ai.gameautomation/.service.GameAccessibilityService</string>
+    <string name="accessibility_service_description">AI游戏自动化服务，用于自动控制游戏操作</string>
+</resources>
