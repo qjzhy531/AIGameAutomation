@@ -1,5 +1,6 @@
 package com.ai.gameautomation.service
 
+import android.app.Activity
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -7,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.Image
 import android.media.ImageReader
@@ -19,6 +21,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.DisplayMetrics
 import android.view.Display
+import android.view.WindowManager
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -73,7 +76,7 @@ class AutomationService : LifecycleService() {
         val resultCode = intent?.getIntExtra("resultCode", -1) ?: -1
         val data = intent?.getParcelableExtra<Intent>("data")
         
-        if (resultCode == RESULT_OK && data != null) {
+        if (resultCode == Activity.RESULT_OK && data != null) {
             startScreenCapture(resultCode, data)
         }
         
@@ -190,6 +193,8 @@ class AutomationService : LifecycleService() {
     }
     
     private fun startScreenCapture(resultCode: Int, data: Intent?) {
+        if (data == null) return
+        
         val mProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         
         val metrics = DisplayMetrics()
@@ -207,7 +212,7 @@ class AutomationService : LifecycleService() {
             screenWidth,
             screenHeight,
             screenDensity,
-            android.view.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader?.surface,
             null,
             null
