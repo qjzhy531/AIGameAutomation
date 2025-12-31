@@ -16,6 +16,7 @@ import android.widget.Button
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.ai.gameautomation.R
+import com.ai.gameautomation.ai.AIEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -170,12 +171,3 @@ class AutomationService : LifecycleService() {
         GameAccessibilityService.performSwipe(x1, y1, x2, y2)
     }
 }
-
-data class Decision(
-    val action: String,  // click, swipe, wait
-    val x: Int = 0,
-    val y: Int = 0,
-    val endX: Int = 0,
-    val endY: Int = 0,
-    val confidence: Float = 0f
-)

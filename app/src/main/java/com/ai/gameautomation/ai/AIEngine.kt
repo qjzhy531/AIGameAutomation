@@ -2,13 +2,18 @@ package com.ai.gameautomation.ai
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import com.ai.gameautomation.service.Decision
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.label.ImageLabel
 import com.google.mlkit.vision.label.ImageLabeling
 import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 object AIEngine {
     
@@ -43,7 +48,7 @@ object AIEngine {
     }
     
     private suspend fun detectImageLabels(bitmap: Bitmap): List<ImageLabel> {
-        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val image = InputImage.fromBitmap(bitmap, 0)
             imageLabeler.process(image)
                 .addOnSuccessListener { result ->
@@ -56,7 +61,7 @@ object AIEngine {
     }
     
     private suspend fun detectText(bitmap: Bitmap): String {
-        return kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val image = InputImage.fromBitmap(bitmap, 0)
             textRecognizer.process(image)
                 .addOnSuccessListener { result ->
