@@ -22,7 +22,7 @@ jobs:
         distribution: 'temurin'
 
     - name: Build Debug APK
-      run: gradle --no-daemon --stacktrace assembleDebug
+      run: gradle --no-daemon --stacktrace --info --warning-mode all assembleDebug
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
