@@ -7,12 +7,24 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import android.hardware.display.VirtualDisplay
+import android.media.Image
+import android.media.ImageReader
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Environment
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.util.DisplayMetrics
+import android.view.Display
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.Toast
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.ai.gameautomation.R
@@ -22,6 +34,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
 
 class AutomationService : LifecycleService() {
     
@@ -29,6 +44,15 @@ class AutomationService : LifecycleService() {
     private var overlayView: android.view.View? = null
     private var automationJob: Job? = null
     private var isRunning = false
+    
+    private var mediaProjection: MediaProjection? = null
+    private var imageReader: ImageReader? = null
+    private var virtualDisplay: VirtualDisplay? = null
+    private var screenDensity: Int = 0
+    private var screenWidth: Int = 0
+    private var screenHeight: Int = 0
+    private var latestScreenshot: Bitmap? = null
+    private val handler = Handler(Looper.getMainLooper())
     
     private val gameReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -43,6 +67,17 @@ class AutomationService : LifecycleService() {
         super.onCreate()
         initOverlay()
         registerReceiver()
+    }
+    
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val resultCode = intent?.getIntExtra("resultCode", -1) ?: -1
+        val data = intent?.getParcelableExtra<Intent>("data")
+        
+        if (resultCode == RESULT_OK && data != null) {
+            startScreenCapture(resultCode, data)
+        }
+        
+        return START_STICKY
     }
     
     override fun onDestroy() {
@@ -145,10 +180,59 @@ class AutomationService : LifecycleService() {
     
     private suspend fun captureScreen(): Bitmap {
         return withContext(Dispatchers.IO) {
-            // 使用MediaProjection API捕获屏幕
-            // 这里简化实现，实际需要处理MediaProjection
+            if (latestScreenshot != null) {
+                return@withContext latestScreenshot!!
+            }
+            
+            // 如果没有屏幕捕获，返回空白的 Bitmap
             Bitmap.createBitmap(1080, 1920, Bitmap.Config.ARGB_8888)
         }
+    }
+    
+    private fun startScreenCapture(resultCode: Int, data: Intent?) {
+        val mProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        
+        val metrics = DisplayMetrics()
+        windowManager?.defaultDisplay?.getMetrics(metrics)
+        screenDensity = metrics.densityDpi
+        screenWidth = metrics.widthPixels
+        screenHeight = metrics.heightPixels
+        
+        imageReader = ImageReader.newInstance(screenWidth, screenHeight, android.graphics.PixelFormat.RGBA_8888, 2)
+        
+        mediaProjection = mProjectionManager.getMediaProjection(resultCode, data)
+        
+        virtualDisplay = mediaProjection?.createVirtualDisplay(
+            "ScreenCapture",
+            screenWidth,
+            screenHeight,
+            screenDensity,
+            android.view.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            imageReader?.surface,
+            null,
+            null
+        )
+        
+        imageReader?.setOnImageAvailableListener({ reader ->
+            val image: Image? = reader.acquireLatestImage()
+            if (image != null) {
+                val planes = image.planes
+                val buffer: ByteBuffer = planes[0].buffer
+                val pixelStride = planes[0].pixelStride
+                val rowStride = planes[0].rowStride
+                val rowPadding = rowStride - pixelStride * screenWidth
+                
+                val bitmap = Bitmap.createBitmap(
+                    screenWidth + rowPadding / pixelStride,
+                    screenHeight,
+                    Bitmap.Config.ARGB_8888
+                )
+                bitmap.copyPixelsFromBuffer(buffer)
+                
+                latestScreenshot = Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
+                image.close()
+            }
+        }, handler)
     }
     
     private fun executeDecision(decision: Decision) {

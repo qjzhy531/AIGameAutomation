@@ -1,8 +1,10 @@
 package com.ai.gameautomation
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -24,6 +26,10 @@ class MainActivity : AppCompatActivity() {
     
     private val REQUEST_CODE_OVERLAY = 1001
     private val REQUEST_CODE_ACCESSIBILITY = 1002
+    private val REQUEST_CODE_SCREEN_CAPTURE = 1003
+    
+    private var screenCaptureResultCode: Int = -1
+    private var screenCaptureData: Intent? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,6 +98,12 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE_ACCESSIBILITY)
     }
     
+    private fun requestScreenCapturePermission() {
+        val mProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val captureIntent = mProjectionManager.createScreenCaptureIntent()
+        startActivityForResult(captureIntent, REQUEST_CODE_SCREEN_CAPTURE)
+    }
+    
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         
@@ -106,10 +118,20 @@ class MainActivity : AppCompatActivity() {
             }
             REQUEST_CODE_ACCESSIBILITY -> {
                 if (isAccessibilityServiceEnabled()) {
-                    startAutomation()
+                    requestScreenCapturePermission()
                 } else {
                     switchAutomation.isChecked = false
                     Toast.makeText(this, "需要开启无障碍服务", Toast.LENGTH_SHORT).show()
+                }
+            }
+            REQUEST_CODE_SCREEN_CAPTURE -> {
+                if (resultCode == RESULT_OK && data != null) {
+                    screenCaptureResultCode = resultCode
+                    screenCaptureData = data
+                    startAutomation()
+                } else {
+                    switchAutomation.isChecked = false
+                    Toast.makeText(this, "需要屏幕捕获权限", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -126,6 +148,8 @@ class MainActivity : AppCompatActivity() {
     
     private fun startAutomation() {
         val intent = Intent(this, AutomationService::class.java)
+        intent.putExtra("resultCode", screenCaptureResultCode)
+        intent.putExtra("data", screenCaptureData)
         startService(intent)
         tvStatus.text = "自动化服务已启动"
         Toast.makeText(this, "自动化服务已启动", Toast.LENGTH_SHORT).show()
